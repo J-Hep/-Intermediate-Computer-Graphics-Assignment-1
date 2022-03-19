@@ -137,11 +137,18 @@ void DefaultSceneLayer::_CreateScene()
 		MeshResource::Sptr monkeyMesh = ResourceManager::CreateAsset<MeshResource>("Monkey.obj");
 		MeshResource::Sptr shipMesh   = ResourceManager::CreateAsset<MeshResource>("fenrir.obj");
 
+		MeshResource::Sptr starfishMesh = ResourceManager::CreateAsset<MeshResource>("Starfish.obj");
+		MeshResource::Sptr bucketMesh = ResourceManager::CreateAsset<MeshResource>("Bucket.obj");
+
 		// Load in some textures
 		Texture2D::Sptr    boxTexture   = ResourceManager::CreateAsset<Texture2D>("textures/box-diffuse.png");
 		Texture2D::Sptr    boxSpec      = ResourceManager::CreateAsset<Texture2D>("textures/box-specular.png");
 		Texture2D::Sptr    monkeyTex    = ResourceManager::CreateAsset<Texture2D>("textures/monkey-uvMap.png");
 		Texture2D::Sptr    leafTex      = ResourceManager::CreateAsset<Texture2D>("textures/leaves.png");
+		Texture2D::Sptr    sandTex		= ResourceManager::CreateAsset<Texture2D>("textures/Terrain/SandTex3.jpg");
+		Texture2D::Sptr    spongeTex	= ResourceManager::CreateAsset<Texture2D>("textures/SpongeTexture.png");
+		Texture2D::Sptr    starfishTex	= ResourceManager::CreateAsset<Texture2D>("textures/StarfishTexture.png");
+
 		leafTex->SetMinFilter(MinFilter::Nearest);
 		leafTex->SetMagFilter(MagFilter::Nearest);
 
@@ -202,6 +209,30 @@ void DefaultSceneLayer::_CreateScene()
 			boxMaterial->Set("u_Material.AlbedoMap", boxTexture);
 			boxMaterial->Set("u_Material.Shininess", 0.1f);
 			boxMaterial->Set("u_Material.NormalMap", normalMapDefault);
+		}
+
+		Material::Sptr sandMaterial = ResourceManager::CreateAsset<Material>(deferredForward);
+		{
+			sandMaterial->Name = "Sand";
+			sandMaterial->Set("u_Material.AlbedoMap", sandTex);
+			sandMaterial->Set("u_Material.Shininess", 0.1f);
+			sandMaterial->Set("u_Material.NormalMap", normalMapDefault);
+		}
+
+		Material::Sptr spongeMaterial = ResourceManager::CreateAsset<Material>(deferredForward);
+		{
+			spongeMaterial->Name = "Sponge";
+			spongeMaterial->Set("u_Material.AlbedoMap", spongeTex);
+			spongeMaterial->Set("u_Material.Shininess", 0.1f);
+			spongeMaterial->Set("u_Material.NormalMap", normalMapDefault);
+		}
+
+		Material::Sptr starfishMaterial = ResourceManager::CreateAsset<Material>(deferredForward);
+		{
+			starfishMaterial->Name = "Starfish";
+			starfishMaterial->Set("u_Material.AlbedoMap", starfishTex);
+			starfishMaterial->Set("u_Material.Shininess", 0.1f);
+			starfishMaterial->Set("u_Material.NormalMap", normalMapDefault);
 		}
 
 		// This will be the reflective material, we'll make the whole thing 90% reflective
@@ -292,17 +323,36 @@ void DefaultSceneLayer::_CreateScene()
 		// Create some lights for our scene
 		GameObject::Sptr lightParent = scene->CreateGameObject("Lights");
 
+		//MAIN LIGHT
+		GameObject::Sptr mainLight = scene->CreateGameObject("Light");
+		mainLight->SetPostion(glm::vec3(0.0f,0.0f,25.0f));
+		lightParent->AddChild(mainLight);
+
+		Light::Sptr lightComponent = mainLight->Add<Light>();
+		//lightComponent->SetColor(glm::linearRand(glm::vec3(0.0f), glm::vec3(1.0f)));
+		lightComponent->SetColor(glm::vec3(0.75f, 0.75f, 1.0f));
+		lightComponent->SetRadius(35.0f);
+		//lightComponent->SetRadius(glm::linearRand(0.1f, 10.0f));
+		//lightComponent->SetIntensity(glm::linearRand(1.0f, 2.0f));
+		lightComponent->SetIntensity(20.0f);
+
+
 		//default 50 iterations.
-		for (int ix = 0; ix < 1; ix++) {
+		for (int ix = 0; ix < 0; ix++) {
 			GameObject::Sptr light = scene->CreateGameObject("Light");
 			light->SetPostion(glm::vec3(glm::diskRand(25.0f), 1.0f));
 			lightParent->AddChild(light);
 
 			Light::Sptr lightComponent = light->Add<Light>();
-			lightComponent->SetColor(glm::linearRand(glm::vec3(0.0f), glm::vec3(1.0f)));
+			//lightComponent->SetColor(glm::linearRand(glm::vec3(0.0f), glm::vec3(1.0f)));
+			lightComponent->SetColor(glm::vec3(0.75f,0.75f,1.0f));
 			lightComponent->SetRadius(glm::linearRand(0.1f, 10.0f));
-			lightComponent->SetIntensity(glm::linearRand(1.0f, 2.0f));
+			//lightComponent->SetIntensity(glm::linearRand(1.0f, 2.0f));
+			lightComponent->SetIntensity(10.0f);
 		}
+
+
+
 
 		// We'll create a mesh that is a simple plane that we can resize later
 		MeshResource::Sptr planeMesh = ResourceManager::CreateAsset<MeshResource>();
@@ -316,8 +366,9 @@ void DefaultSceneLayer::_CreateScene()
 		// Set up the scene's camera
 		GameObject::Sptr camera = scene->MainCamera->GetGameObject()->SelfRef();
 		{
-			camera->SetPostion({ -9, -6, 15 });
-			camera->LookAt(glm::vec3(0.0f));
+			camera->SetPostion({ 0,12, 5.5 });
+			camera->SetRotation({ 35, 0, 180 });
+			//camera->LookAt(glm::vec3(0.0f));
 
 			camera->Add<SimpleCameraControl>();
 
@@ -334,18 +385,63 @@ void DefaultSceneLayer::_CreateScene()
 			MeshResource::Sptr tiledMesh = ResourceManager::CreateAsset<MeshResource>();
 			tiledMesh->AddParam(MeshBuilderParam::CreatePlane(ZERO, UNIT_Z, UNIT_X, glm::vec2(100.0f), glm::vec2(20.0f)));
 			tiledMesh->GenerateMesh();
+			
+			plane->SetScale(glm::vec3(2.0f,2.0f,2.0f));
 
 			// Create and attach a RenderComponent to the object to draw our mesh
 			RenderComponent::Sptr renderer = plane->Add<RenderComponent>();
 			renderer->SetMesh(tiledMesh);
-			renderer->SetMaterial(boxMaterial);
+			renderer->SetMaterial(sandMaterial);
 
 			// Attach a plane collider that extends infinitely along the X/Y axis
 			RigidBody::Sptr physics = plane->Add<RigidBody>(/*static by default*/);
 			physics->AddCollider(BoxCollider::Create(glm::vec3(50.0f, 50.0f, 1.0f)))->SetPosition({ 0,0,-1 });
 		}
-		
 
+		GameObject::Sptr sponge = scene->CreateGameObject("Sponge");
+		{
+			MeshResource::Sptr boxMesh = ResourceManager::CreateAsset<MeshResource>();
+			boxMesh->AddParam(MeshBuilderParam::CreateCube(ZERO, ONE));
+			boxMesh->GenerateMesh();
+
+			// Set and rotation position in the scene
+			sponge->SetPostion(glm::vec3(0.0f, 10.0f, 1.0f));
+
+			// Add a render component
+			RenderComponent::Sptr renderer = sponge->Add<RenderComponent>();
+			renderer->SetMesh(boxMesh);
+			renderer->SetMaterial(spongeMaterial);
+		}
+	
+		GameObject::Sptr starfish = scene->CreateGameObject("Starfish");
+		{
+			// Set position in the scene
+			starfish->SetRotation(glm::vec3(90.0f, 0.0f, 0.0f));
+			starfish->SetPostion(glm::vec3(-2.0f, 9.5f, 2.0f));
+			starfish->SetScale(glm::vec3(0.125f, 0.125f, 0.125f));
+
+			// Create and attach a renderer for the monkey
+			RenderComponent::Sptr renderer = starfish->Add<RenderComponent>();
+			renderer->SetMesh(starfishMesh);
+			renderer->SetMaterial(starfishMaterial);
+
+			//Modified to rotate
+			starfish->Add<JumpBehaviour>();
+		}
+
+		GameObject::Sptr bucket = scene->CreateGameObject("Bucket");
+		{
+			// Set position in the scene
+			bucket->SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+			bucket->SetPostion(glm::vec3(3.0f, 7.0f, 2.0f));
+			bucket->SetScale(glm::vec3(0.25f, 0.25f, 0.25f));
+
+			// Create and attach a renderer for the monkey
+			RenderComponent::Sptr renderer = bucket->Add<RenderComponent>();
+			renderer->SetMesh(bucketMesh);
+			renderer->SetMaterial(boxMaterial);
+
+		}
 	/*	
 	
 	GameObject::Sptr monkey1 = scene->CreateGameObject("Monkey 1");
